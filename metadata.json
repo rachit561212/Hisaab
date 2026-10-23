@@ -1,0 +1,6 @@
+{
+  "name": "Kirana Khata Sathi",
+  "description": "Smart Kirana Khata & Ledger Management powered by Firebase Firestore and Gemini AI.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

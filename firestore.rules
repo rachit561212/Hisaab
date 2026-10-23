@@ -1,0 +1,64 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Default-deny catch-all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper functions
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && (
+        (request.auth.token.email == "rachit040899@gmail.com" && request.auth.token.email_verified == true) ||
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+      );
+    }
+
+    // Receipt Validation
+    function isValidReceipt(data) {
+      return data.id is string && data.id.size() <= 128 &&
+        data.vendor is string && data.vendor.size() <= 200 &&
+        data.date is string && data.date.size() <= 20 &&
+        data.kind in ['spent', 'received'] &&
+        data.status in ['new', 'accepted', 'corrected', 'dismissed'];
+    }
+
+    // Collection: /receipts/{receiptId}
+    match /receipts/{receiptId} {
+      allow read: if true; // Public demo ledger queryable for shop receipts
+      allow create: if isValidId(receiptId) && isValidReceipt(incoming());
+      allow update: if isValidId(receiptId) && isValidReceipt(incoming());
+      allow delete: if isValidId(receiptId);
+    }
+
+    // Collection: /users/{userId}
+    match /users/{userId} {
+      allow read: if isSignedIn();
+      allow write: if isSignedIn() && (request.auth.uid == userId || isAdmin());
+    }
+
+    // Collection: /items/{itemId}
+    match /items/{itemId} {
+      allow read: if true;
+      allow write: if true;
+    }
+  }
+}
